@@ -18,6 +18,7 @@ namespace Sample.MySql.Domain.Maps
             builder.Property(o => o.Id).ValueGeneratedNever().IsRequired().HasMaxLength(128);
             builder.Property(o => o.Name).HasMaxLength(128);
             builder.ToTable(nameof(SysUserMod));
+            builder.UseCollation("utf8mb4_unicode_ci");
         }
     }
 }

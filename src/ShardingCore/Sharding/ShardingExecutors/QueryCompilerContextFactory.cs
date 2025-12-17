@@ -125,7 +125,7 @@ namespace ShardingCore.Sharding.ShardingExecutors
                     case nameof(RelationalQueryableExtensions.ExecuteDelete):
                         return _executeDeleteQueryableCombine;
 #endif
-#if EFCORE9
+#if EFCORE9 || EFCORE10
                     case nameof(EntityFrameworkQueryableExtensions.ExecuteUpdate):
                         return _executeUpdateQueryableCombine;
                     case nameof(EntityFrameworkQueryableExtensions.ExecuteDelete):

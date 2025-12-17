@@ -1,4 +1,4 @@
-#if EFCORE9
+#if EFCORE9 || EFCORE10
 
 using System;
 using System.Collections.Generic;

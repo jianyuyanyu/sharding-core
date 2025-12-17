@@ -1,5 +1,5 @@
 
-#if  EFCORE9
+#if  EFCORE9 || EFCORE10
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;

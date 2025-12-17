@@ -1,4 +1,4 @@
-#if EFCORE8 || EFCORE9
+#if EFCORE8 || EFCORE9 || EFCORE10
 using System;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;

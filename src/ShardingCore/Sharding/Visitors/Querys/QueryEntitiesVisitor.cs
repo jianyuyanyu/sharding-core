@@ -114,7 +114,7 @@ namespace ShardingCore.Core.Internal.Visitors.Querys
     }
 #endif
 
-#if EFCORE5|| EFCORE6 || EFCORE7 || EFCORE8 || EFCORE9
+#if EFCORE5|| EFCORE6 || EFCORE7 || EFCORE8 || EFCORE9 || EFCORE10
     /// <summary>
     /// 获取分表类型
     /// </summary>
@@ -137,7 +137,7 @@ namespace ShardingCore.Core.Internal.Visitors.Querys
         {
             if (node is QueryRootExpression queryRootExpression)
             {
-#if EFCORE7 || EFCORE8 || EFCORE9
+#if EFCORE7 || EFCORE8 || EFCORE9 || EFCORE10
                 _shardingEntities.Add(queryRootExpression.ElementType);
 #else   
                 _shardingEntities.Add(queryRootExpression.EntityType.ClrType);  
