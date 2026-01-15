@@ -1,19 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using ShardingCore.Core.EntityMetadatas;
+using ShardingCore.Core.VirtualRoutes;
+using ShardingCore.Extensions;
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-using ShardingCore.Core.EntityMetadatas;
-using ShardingCore.Core.VirtualDatabase;
-using ShardingCore.Core.VirtualRoutes;
-using ShardingCore.Exceptions;
-using ShardingCore.Extensions;
-using ShardingCore.Sharding.Visitors;
 
 namespace ShardingCore.Core.Internal.Visitors
 {
@@ -271,42 +264,55 @@ namespace ShardingCore.Core.Internal.Visitors
 
         private void CombineEntityLambdaExpression(MethodCallExpression node)
         {
+            LambdaExpression lambdaExpression = null;
+
+            // Handle different expression structures
             if (node.Arguments[1] is UnaryExpression unaryExpression)
             {
-                if (unaryExpression.Operand is LambdaExpression lambdaExpression)
+                if (unaryExpression.Operand is LambdaExpression unaryLambda)
                 {
-                    if (lambdaExpression.Parameters[0].Type == _entityMetadata.EntityType)
+                    lambdaExpression = unaryLambda;
+                }
+            }
+            else if (node.Arguments[1] is LambdaExpression directLambda)
+            {
+                // EF Core 10+ may pass lambda directly without wrapping in UnaryExpression
+                lambdaExpression = directLambda;
+            }
+
+            if (lambdaExpression != null)
+            {
+                if (lambdaExpression.Parameters[0].Type == _entityMetadata.EntityType)
+                {
+                    if (_entityLambdaExpression == null)
                     {
-                        if (_entityLambdaExpression == null)
-                        {
-                            _entityLambdaExpression = lambdaExpression;
-                        }
-                        else
-                        {
-                            var body = Expression.AndAlso(_entityLambdaExpression.Body, lambdaExpression.Body);
-                            var lambda = Expression.Lambda(body, _entityLambdaExpression.Parameters[0]);
-                            _entityLambdaExpression = lambda;
-                        }
+                        _entityLambdaExpression = lambdaExpression;
                     }
-                    //todo
-                    else if (lambdaExpression.Parameters[0].Type.IsGenericType &&
-                             lambdaExpression.Parameters[0].Type.IsAnonymousType())
+                    else
                     {
-                        var typeGenericTypeArguments = lambdaExpression.Parameters[0].Type.GenericTypeArguments;
-                        foreach (var typeGenericTypeArgument in typeGenericTypeArguments)
+                        var body = Expression.AndAlso(_entityLambdaExpression.Body, lambdaExpression.Body);
+                        var lambda = Expression.Lambda(body, _entityLambdaExpression.Parameters[0]);
+                        _entityLambdaExpression = lambda;
+                    }
+                }
+                //todo
+                else if (lambdaExpression.Parameters[0].Type.IsGenericType &&
+                         lambdaExpression.Parameters[0].Type.IsAnonymousType())
+                {
+                    var typeGenericTypeArguments = lambdaExpression.Parameters[0].Type.GenericTypeArguments;
+                    foreach (var typeGenericTypeArgument in typeGenericTypeArguments)
+                    {
+                        if (typeGenericTypeArgument == _entityMetadata.EntityType)
                         {
-                            if (typeGenericTypeArgument == _entityMetadata.EntityType)
+                            if (_entityLambdaExpression == null)
                             {
-                                if (_entityLambdaExpression == null)
-                                {
-                                    _entityLambdaExpression = lambdaExpression;
-                                }
-                                else
-                                {
-                                    var body = Expression.AndAlso(_entityLambdaExpression.Body, lambdaExpression.Body);
-                                    var lambda = Expression.Lambda(body, _entityLambdaExpression.Parameters[0]);
-                                    _entityLambdaExpression = lambda;
-                                }
+                                _entityLambdaExpression = lambdaExpression;
+                            }
+                            else
+                            {
+                                var body = Expression.AndAlso(_entityLambdaExpression.Body, lambdaExpression.Body);
+                                var lambda = Expression.Lambda(body, _entityLambdaExpression.Parameters[0]);
+                                _entityLambdaExpression = lambda;
                             }
                         }
                     }
@@ -356,22 +362,27 @@ namespace ShardingCore.Core.Internal.Visitors
                     object arrayObject = null;
                     if (methodCallExpression.Object != null)
                     {
-                        if (methodCallExpression.Object is MemberExpression member1Expression)
+                        // Try to get value from Object (instance method call like list.Contains(x))
+                        try
                         {
-                            arrayObject = GetExpressionValue(member1Expression);
+                            arrayObject = GetExpressionValue(methodCallExpression.Object);
                         }
-                        else if (methodCallExpression.Object is ListInitExpression member2Expression)
+                        catch
                         {
-                            arrayObject = GetExpressionValue(member2Expression);
+                            // If we can't get the value, arrayObject remains null
                         }
                     }
-                    else if (methodCallExpression.Arguments[0] is MemberExpression member2Expression)
+                    else if (methodCallExpression.Arguments.Count > 0)
                     {
-                        arrayObject = GetExpressionValue(member2Expression);
-                    }
-                    else if (methodCallExpression.Arguments[0] is NewArrayExpression member3Expression)
-                    {
-                        arrayObject = GetExpressionValue(member3Expression);
+                        // Try to get value from first argument (static method call like Enumerable.Contains(list, x))
+                        try
+                        {
+                            arrayObject = GetExpressionValue(methodCallExpression.Arguments[0]);
+                        }
+                        catch
+                        {
+                            // If we can't get the value, arrayObject remains null
+                        }
                     }
 
                     if (arrayObject != null)
