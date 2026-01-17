@@ -84,7 +84,37 @@ namespace ShardingCore.Extensions
         public static bool IsEnumerableContains(this MethodCallExpression express)
         {
             var methodName = express.Method.Name;
-            return methodName == nameof(IList.Contains)&& (express.Method.DeclaringType?.Namespace.IsInEnumerable()??false);
+            if (methodName != nameof(IList.Contains))
+                return false;
+            
+            var declaringType = express.Method.DeclaringType;
+            if (declaringType == null)
+                return false;
+                
+            // Check if declaring type's namespace is in enumerable namespaces
+            if (declaringType.Namespace?.IsInEnumerable() == true)
+                return true;
+                
+            // Also check if the method is from an array type (e.g., string[])
+            if (declaringType.IsArray || (declaringType.IsGenericType && 
+                (declaringType.GetGenericTypeDefinition() == typeof(List<>) ||
+                 declaringType.GetGenericTypeDefinition() == typeof(HashSet<>) ||
+                 declaringType.GetGenericTypeDefinition() == typeof(IEnumerable<>) ||
+                 declaringType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                 declaringType.GetGenericTypeDefinition() == typeof(IList<>))))
+                return true;
+                
+            // Check if it's the Enumerable.Contains extension method
+            if (declaringType == typeof(System.Linq.Enumerable))
+                return true;
+            
+            // .NET 10+ / EF Core 10: Support for MemoryExtensions.Contains with ReadOnlySpan<T>
+            // When using new[] { "A", "B" }.Contains(x), .NET 10 may convert the array to ReadOnlySpan<T>
+            // and use MemoryExtensions.Contains instead of Enumerable.Contains
+            if (declaringType.FullName == "System.MemoryExtensions")
+                return true;
+                
+            return false;
         }
         public static bool IsStringContains(this MethodCallExpression express)
         {

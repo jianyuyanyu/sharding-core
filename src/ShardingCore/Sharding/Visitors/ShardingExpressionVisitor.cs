@@ -110,6 +110,14 @@ namespace ShardingCore.Core.Internal.Visitors
 
                 case MethodCallExpression e:
                 {
+                    // .NET 10+: Handle op_Implicit conversion to ReadOnlySpan<T>
+                    // ReadOnlySpan<T> is a ref struct and cannot be created via reflection
+                    // We skip the conversion and return the underlying array directly
+                    if (e.Method.Name == "op_Implicit" && e.Arguments.Count == 1)
+                    {
+                        return GetExpressionValue(e.Arguments[0]);
+                    }
+                    
                     var expressionValue = GetExpressionValue(e.Object);
 
                     return e.Method.Invoke(
