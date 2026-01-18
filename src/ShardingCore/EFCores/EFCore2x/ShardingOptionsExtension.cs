@@ -26,6 +26,7 @@ namespace ShardingCore.EFCores
         public bool ApplyServices(IServiceCollection services)
         {
             services.AddSingleton<IShardingRuntimeContext>(sp => ShardingRuntimeContext);
+            services.AddScoped<IResettableService, ShardingDbContextResettableService>();
             return true;
         }
         public long GetServiceProviderHashCode() => ShardingRuntimeContext.GetHashCode();

@@ -51,6 +51,32 @@ namespace ShardingCore.Sharding
         }
 
         /// <summary>
+        /// Clears cached sharding executors so pooled contexts can be reused safely after reset.
+        /// </summary>
+        internal void ResetShardingDbContextExecutor()
+        {
+            if (_shardingDbContextExecutor != null)
+            {
+                _shardingDbContextExecutor.Dispose();
+                _shardingDbContextExecutor = null;
+            }
+            _createExecutor = false;
+        }
+
+        /// <summary>
+        /// Indicates whether the sharding executor has been created for this context.
+        /// </summary>
+        protected bool ExecutorCreated => _createExecutor;
+
+        /// <summary>
+        /// Sets the executor creation flag for derived contexts, primarily for test usage.
+        /// </summary>
+        protected void SetExecutorCreated(bool created)
+        {
+            _createExecutor = created;
+        }
+
+        /// <summary>
         /// 当前dbcontext是否是执行的dbcontext
         /// </summary>
         public bool IsExecutor => GetShardingExecutor() == default;

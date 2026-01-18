@@ -31,6 +31,7 @@ namespace ShardingCore.EFCores
         public void ApplyServices(IServiceCollection services)
         {
             services.AddSingleton<IShardingRuntimeContext>(sp => ShardingRuntimeContext);
+            services.AddScoped<IResettableService, ShardingDbContextResettableService>();
         }
 
         public void Validate(IDbContextOptions options)
