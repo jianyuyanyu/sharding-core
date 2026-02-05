@@ -79,5 +79,10 @@ namespace Sample.MySql.Shardings
                 }
             }
         }
+
+        protected override List<TableRouteUnit> AfterShardingRouteUnitFilter(DataSourceRouteResult dataSourceRouteResult, List<TableRouteUnit> shardingRouteUnits)
+        {
+            return base.AfterShardingRouteUnitFilter(dataSourceRouteResult, shardingRouteUnits);
+        }
     }
 }
